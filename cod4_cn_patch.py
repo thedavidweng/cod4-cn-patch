@@ -58,7 +58,7 @@ class COD4CNPatch:
     # ── Zone .ff 文件规则 ────────────────────────────
     ZONE_SOURCE_DIRS = ["zone/english", "zone"]
     ZONE_TARGET_DIR  = "zone/chinese"
-    ZONE_EXCLUDES    = ["code_post_gfx.ff", "localized_code_post_gfx_mp.ff"]
+
 
     def __init__(self, game_dir: Path, patch_dir: Path | None = None):
         self.game_dir = game_dir.resolve()
@@ -154,14 +154,16 @@ class COD4CNPatch:
 
     # ── 游戏目录检测 ─────────────────────────────────
     def verify_game_dir(self) -> bool:
-        exe_candidates = [
-            "iw3sp.exe", "iw3mp.exe", "cod4.exe",
-            "cod4sp.exe", "cod4mp.exe"
-        ]
-        has_exe = any((self.game_dir / f).exists() for f in exe_candidates)
-        has_zone = (self.game_dir / "zone" / "english").exists()
-        has_main = (self.game_dir / "main").exists()
-        return has_exe or (has_zone and has_main)
+        """验证当前目录包含 COD4 需要修改的数据文件（不依赖 exe 文件名）"""
+        # 检查 zone/ 下是否有 .ff 文件（FastFile 数据包）
+        zone_paths = [self.game_dir / "zone" / "english", self.game_dir / "zone"]
+        has_ff = any(d.exists() and any(d.glob("*.ff")) for d in zone_paths)
+
+        # 检查 main/ 下是否有 .iwd 文件（资源包）
+        main_dir = self.game_dir / "main"
+        has_iwd = main_dir.exists() and any(main_dir.glob("*.iwd"))
+
+        return has_ff and has_iwd
 
     # ── Patch payload 扫描 ────────────────────────────
     def find_patch_payloads(self) -> dict:
@@ -265,7 +267,7 @@ class COD4CNPatch:
         if not self.verify_game_dir():
             self._err("当前目录看起来不是 COD4 游戏根目录。")
             print("  请将此脚本放到 COD4 安装目录后运行。")
-            print("  例如: C:\\Program Files (x86)\\Call of Duty 4\\")
+            print("  该目录应包含 main/ 和 zone/ 数据文件夹。")
             self._pause()
             return False
 
@@ -432,22 +434,14 @@ class COD4CNPatch:
             if not src_dir.exists():
                 continue
             for ff in src_dir.glob("*.ff"):
-                if ff.name in self.ZONE_EXCLUDES:
-                    continue
+                # 所有 .ff 都需要复制到 zone/chinese/，因为 COD4 引擎
+                # 在中文模式下会从 zone/chinese/ 加载全部 zone 文件
                 dst = chinese_dir / ff.name
                 if dst.exists():
                     self._backup(dst)
                 shutil.copy2(ff, dst)
                 copied.add(ff.name)
                 self._info(f"已复制: {src_rel}/{ff.name}")
-
-        for ex_name in self.ZONE_EXCLUDES:
-            ex_path = chinese_dir / ex_name
-            if ex_path.exists():
-                self._backup(ex_path)
-                ex_path.unlink()
-                self._mark_delete(ex_path)
-                self._info(f"已删除排除项: {ex_name}")
 
         missing = [n for n in target_ff_names if n not in copied
                    and not (chinese_dir / n).exists()]
@@ -721,9 +715,8 @@ def main():
         print(f"  当前位置: {patcher.game_dir}")
         print()
         print("  COD4 游戏根目录通常包含：")
-        print("    - iw3sp.exe（或 iw3mp.exe）")
-        print("    - main/ 文件夹")
-        print("    - zone/ 文件夹")
+        print("    - main/ 文件夹（含 .iwd 资源包）")
+        print("    - zone/ 文件夹（含 .ff 数据文件）")
         print()
         print("  请将补丁文件（.bat / .command / .sh、cod4_cn_patch.py")
         print("  和 patches/）移动到 COD4 游戏根目录后再运行。")
