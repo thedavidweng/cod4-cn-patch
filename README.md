@@ -46,17 +46,25 @@
 
 ## 快速开始（推荐：双击启动）
 
+### 下载补丁
+
+1. 在本仓库页面点击绿色的 **<> Code** 按钮
+2. 点击 **Download ZIP**
+3. 将下载的 `cod4-cn-patch-main.zip` 在 COD4 **游戏根目录** 解压
+
 ### Windows
 
-1. 把 `install_cn.bat` + `cod4_cn_patch.py` + `patches/` 放到 COD4 **游戏根目录**
-2. **双击 `install_cn.bat`**
-3. 在弹出的 CMD 窗口中查看原汉化组人员名单，然后选择菜单操作
+1. 打开解压出的 `cod4-cn-patch-main/` 文件夹
+2. 将其中的 `install_cn.bat`、`cod4_cn_patch.py` 和 `patches/` 放到 COD4 **游戏根目录**
+3. **双击 `install_cn.bat`**
+4. 在弹出的 CMD 窗口中查看原汉化组人员名单，然后选择菜单操作
 
 ### Linux / SteamOS / macOS
 
-1. 把 `install_cn.sh` + `cod4_cn_patch.py` + `patches/` 放到 COD4 **游戏根目录**
-2. **右键 `install_cn.sh` → 选择 "在终端中运行"**（或双击，取决于桌面环境）
-3. 在终端窗口中选择菜单操作
+1. 打开解压出的 `cod4-cn-patch-main/` 文件夹
+2. 将其中的 `install_cn.sh`、`cod4_cn_patch.py` 和 `patches/` 放到 COD4 **游戏根目录**
+3. **右键 `install_cn.sh` → 选择 "在终端中运行"**（或双击，取决于桌面环境）
+4. 在终端窗口中选择菜单操作
 
 > Steam Deck 桌面模式下，在文件管理器 (Dolphin) 中右键 `.sh` 文件即可看到 "Run in Konsole" 选项。
 
