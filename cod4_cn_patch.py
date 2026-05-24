@@ -554,8 +554,13 @@ class COD4CNPatch:
         for disabled in main_dir.glob(f"{self.IWD_ENG_PATTERN}*.iwd.disabled"):
             orig = disabled.with_suffix("")
             try:
-                disabled.rename(orig)
-                self._info(f"已恢复: {orig.name}")
+                if orig.exists():
+                    # 原始 .iwd 已存在（可能已从备份恢复），.disabled 是多余残留
+                    disabled.unlink()
+                    self._info(f"已删除残留禁用文件: {disabled.name}")
+                else:
+                    disabled.rename(orig)
+                    self._info(f"已恢复: {orig.name}")
             except Exception as e:
                 self._warn(f"恢复失败 {disabled.name}: {e}")
 
