@@ -410,6 +410,8 @@ class COD4CNPatch:
 
             for eng in sorted(main_dir.glob(f"{self.IWD_ENG_PATTERN}*.iwd")):
                 disabled = eng.with_suffix(eng.suffix + ".disabled")
+                if disabled.exists():
+                    disabled.unlink()  # 清理上次卸载残留的 .disabled
                 self._backup(eng)
                 eng.rename(disabled)
                 self._mark_rename(disabled, eng)
