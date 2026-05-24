@@ -1,0 +1,11 @@
+"列兵 " + lastname;
+		self.airank = "private";
+	}
+	else if (rank > 2)
+	{
+		fullname = "下士 " + lastname;
+		self.airank = "private";
+	}
+	else
+	{
+		fullname = "中士 "

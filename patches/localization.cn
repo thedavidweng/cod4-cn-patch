@@ -1,0 +1,100 @@
+chinese
+
+
+
+WIN_CONFIGURE_UPDATED_TITLE
+"建议设置更新"
+
+
+
+WIN_CONFIGURE_UPDATED_BODY
+"上次你运行《使命召唤4:现代战争》后推荐设置已经改变了.  你想让游戏根据这些新设置自动配置最佳游戏吗？
+
+此建议适用于大多数人.  这将改变游戏设置, 但不会改变游戏控制.  "
+
+
+
+WIN_LOW_MEMORY_BODY
+"看来你的虚拟内存较低.  这可能会引起游戏运行速度缓慢, 甚至完全停止.  
+强烈建议你在运行《使命召唤4:现代战争》前关闭一些应用程序.  
+
+你仍想运行《使命召唤4:现代战争》吗？"
+
+
+
+WIN_LOW_MEMORY_TITLE
+"低内存"
+
+
+
+WIN_COLORDEPTH_WARN_BODY
+"在当前的桌面显示色深设置下极有可能无法正确初始化窗口显示.  
+选择'确定'进行尝试.  
+如果你想退出, 请按下'取消'.  "
+
+
+
+WIN_COLORDEPTH_WARN_TITLE
+"低桌面色深"
+
+
+
+WIN_COMPUTER_CHANGE_BODY
+"上次你运行《使命召唤4:现代战争》后推荐设置已经改变了.  
+你想让游戏根据这些新设置自动配置最佳游戏吗？
+
+此建议适用于大多数人.  这将改变游戏设置, 但不会改变游戏控制.  "
+
+
+
+WIN_COMPUTER_CHANGE_TITLE
+"设置最优设置？"
+
+
+
+WIN_DISK_FULL_BODY
+"《使命召唤4:现代战争》无法写入一个文件.  硬盘可能已满 .  "
+
+
+
+WIN_DISK_FULL_TITLE
+"文件写入错误"
+
+
+
+WIN_IMPROPER_QUIT_BODY
+"《使命召唤4:现代战争》在上次运行时似乎没有正确退出.  
+你想要在安全模式下运行游戏吗？
+
+此建议适用于大多数人.  
+它会改变你的系统设置, 但不会改变你的控制设置.  "
+
+
+
+WIN_IMPROPER_QUIT_TITLE
+"以安全模式运行吗？"
+
+
+WIN_ERROR
+"致命错误"
+
+
+WIN_OUT_OF_MEM_BODY
+"内存溢出错误.  你的硬盘空间可能不足.  "
+
+
+WIN_OUT_OF_MEM_TITLE
+"内存溢出错误"
+
+
+WIN_UNABLE_LOAD_DLL_BODY
+"无法加载一个DLL.  这可能是因为内存太低、 硬盘空间不足或者是DLL文件丢失造成的.  "
+
+
+WIN_DIRECTX_INIT_TITLE
+"DirectX 错误"
+
+WIN_DIRECTX_INIT_BODY
+"DirectX 遇到无法恢复的错误.  
+
+查看自述文件得到可能的解决方案.  "
