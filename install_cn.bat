@@ -1,32 +1,29 @@
-﻿@echo off
+@echo off
 chcp 65001 >nul 2>&1
-title 使命召唤4：现代战争 中文补丁安装器
+title COD4 MW - Chinese Patch Installer
 
-:: 切换到脚本所在目录
 cd /d "%~dp0"
 
-:: 优先检测 python，其次检测 py（Windows Python Launcher）
 python --version >nul 2>&1
 if not errorlevel 1 goto :run_python
 
 py --version >nul 2>&1
 if not errorlevel 1 goto :run_py
 
-:: 都未找到
 cls
 echo.
-echo    ============================================
-echo    错误: 未找到 Python 3
-echo    ============================================
+echo     ============================================
+echo     ERROR: Python 3 not found
+echo     ============================================
 echo.
-echo    本工具需要 Python 3.6 或更高版本。
-echo    请从 https://www.python.org/downloads/ 下载安装。
+echo     This tool requires Python 3.6 or later.
+echo     Download: https://www.python.org/downloads/
 echo.
-echo    安装时请务必勾选 "Add Python to PATH"
-echo    或选择 "Use admin privileges when installing py.exe"
+echo     Make sure to check "Add Python to PATH"
+echo     or select "Use admin privileges when installing py.exe"
 echo.
-echo    如果已安装但仍提示此错误，请尝试在命令行运行：
-echo        py cod4_cn_patch.py
+echo     If already installed but still not found, try:
+echo         py cod4_cn_patch.py
 echo.
 pause
 exit /b 1
@@ -42,6 +39,6 @@ goto :check_error
 :check_error
 if errorlevel 1 (
     echo.
-    echo 按任意键退出...
+    echo Press any key to exit...
     pause >nul
 )
