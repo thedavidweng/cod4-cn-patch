@@ -711,6 +711,27 @@ def main():
     args = parser.parse_args()
     patcher = COD4CNPatch(game_dir=args.game_dir, patch_dir=args.patch_dir)
 
+    # ── 防呆：检查是否在正确的游戏目录 ───────────────
+    if not patcher.verify_game_dir():
+        print()
+        print("=" * 60)
+        print("  错误：当前目录似乎不是 COD4 游戏根目录")
+        print("=" * 60)
+        print()
+        print(f"  当前位置: {patcher.game_dir}")
+        print()
+        print("  COD4 游戏根目录通常包含：")
+        print("    - iw3sp.exe（或 iw3mp.exe）")
+        print("    - main/ 文件夹")
+        print("    - zone/ 文件夹")
+        print()
+        print("  请将补丁文件（.bat / .command / .sh、cod4_cn_patch.py")
+        print("  和 patches/）移动到 COD4 游戏根目录后再运行。")
+        print()
+        print("=" * 60)
+        input("  按 Enter 键退出...")
+        sys.exit(1)
+
     if args.command is None:
         patcher.interactive()
     elif args.command == "install":
