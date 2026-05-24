@@ -55,15 +55,24 @@
 ### Windows
 
 1. 打开解压出的 `cod4-cn-patch-main/` 文件夹
-2. 将其中的 `install_cn.bat`、`cod4_cn_patch.py` 和 `patches/` 放到 COD4 **游戏根目录**
-3. **双击 `install_cn.bat`**
+2. 将其中的 `Windows双击安装中文补丁.bat`、`cod4_cn_patch.py` 和 `patches/` 放到 COD4 **游戏根目录**
+3. **双击 `Windows双击安装中文补丁.bat`**
 4. 在弹出的 CMD 窗口中查看原汉化组人员名单，然后选择菜单操作
 
-### Linux / SteamOS / macOS
+### macOS
 
 1. 打开解压出的 `cod4-cn-patch-main/` 文件夹
-2. 将其中的 `install_cn.sh`、`cod4_cn_patch.py` 和 `patches/` 放到 COD4 **游戏根目录**
-3. **右键 `install_cn.sh` → 选择 "在终端中运行"**（或双击，取决于桌面环境）
+2. 将其中的 `macOS双击安装中文补丁.command`、`cod4_cn_patch.py` 和 `patches/` 放到 COD4 **游戏根目录**
+3. **双击 `macOS双击安装中文补丁.command`**
+4. 在终端窗口中选择菜单操作
+
+> 首次运行时系统可能提示"无法打开"，请前往 **系统设置 → 隐私与安全性** 中允许，或按住 Control 键点按文件选择"打开"。
+
+### Linux / SteamOS
+
+1. 打开解压出的 `cod4-cn-patch-main/` 文件夹
+2. 将其中的 `Linux双击安装中文补丁.sh`、`cod4_cn_patch.py` 和 `patches/` 放到 COD4 **游戏根目录**
+3. **双击 `Linux双击安装中文补丁.sh`**（取决于桌面环境，或右键选择"作为程序运行"）
 4. 在终端窗口中选择菜单操作
 
 > Steam Deck 桌面模式下，在文件管理器 (Dolphin) 中右键 `.sh` 文件即可看到 "Run in Konsole" 选项。
@@ -120,8 +129,9 @@ Call of Duty 4/
 ├── iw3sp.exe              ← 游戏主程序
 ├── main/
 ├── zone/
-├── install_cn.bat         ← Windows 双击启动器
-├── install_cn.sh          ← Linux/SteamOS 双击启动器
+├── Windows双击安装中文补丁.bat     ← Windows 双击启动器
+├── macOS双击安装中文补丁.command   ← macOS 双击启动器
+├── Linux双击安装中文补丁.sh         ← Linux/SteamOS 双击启动器
 ├── cod4_cn_patch.py       ← 核心安装器（纯 Python）
 ├── README.md
 └── patches/
