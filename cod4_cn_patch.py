@@ -23,6 +23,7 @@ import argparse
 import os
 import sys
 import zlib
+import zipfile
 import shutil
 from pathlib import Path
 from collections import defaultdict
@@ -69,6 +70,7 @@ class COD4CNPatch:
 
         self.bak_dir = self.game_dir / ".cod4cn_bak"
         self._rollback_log = []
+        self.generated_manifest = self.bak_dir / "generated_files.txt"
 
     # ── 终端输出工具 ─────────────────────────────────
     def _clear(self):
@@ -240,6 +242,12 @@ class COD4CNPatch:
     def _mark_rename(self, src: Path, dst: Path):
         self._rollback_log.append(("rename", dst, src))
 
+    def _record_generated_file(self, path: Path):
+        rel = path.relative_to(self.game_dir)
+        self.generated_manifest.parent.mkdir(parents=True, exist_ok=True)
+        with self.generated_manifest.open("a", encoding="utf-8") as f:
+            f.write(rel.as_posix() + "\n")
+
     def _rollback(self):
         self._warn("发生错误，正在回滚已执行的操作...")
         for action, *args in reversed(self._rollback_log):
@@ -248,6 +256,12 @@ class COD4CNPatch:
                     bak, orig = args
                     if bak.exists():
                         shutil.copy2(bak, orig)
+                elif action == "delete":
+                    path, = args
+                    if path.is_dir():
+                        shutil.rmtree(path)
+                    elif path.exists():
+                        path.unlink()
                 elif action == "rename":
                     dst, src = args
                     if dst.exists() and not src.exists():
@@ -316,12 +330,19 @@ class COD4CNPatch:
             # ── Step 3: 准备 .ff 源文件 ────────────────
             print(f"\n[3/4] 准备 {total_ff} 个游戏数据文件...")
             self._step_zone_prep(set(ff_patches.keys()))
+            self._step_full_zone_files()
             self._ok("完成")
 
             # ── Step 4: 应用 .ff patches ───────────────
             print(f"\n[4/4] 写入汉化补丁 (共 {total_ff} 个文件)...")
             self._step_ff_patches(ff_patches)
             self._ok("完成")
+
+            print("\n[*] 同步到 Steam 英文加载路径...")
+            self._step_zone_mirror_to_english(set(ff_patches.keys()))
+            self._ok("完成")
+
+            self._validate_installation()
 
             print("\n" + "=" * 60)
             print("  [OK] 安装完成！游戏已切换为中文版。")
@@ -393,37 +414,228 @@ class COD4CNPatch:
             self._warn("main/ 目录不存在，跳过 IWD 处理")
             return
 
-        for old in main_dir.glob(f"{self.IWD_CN_PATTERN}*.iwd"):
+        english_iwds = sorted(main_dir.glob(f"{self.IWD_ENG_PATTERN}*.iwd"))
+        if not english_iwds:
+            english_iwds = self._restore_english_iwds_from_old_patch(main_dir)
+        if not english_iwds:
+            raise RuntimeError("main/ 中未找到 localized_english_iw*.iwd，无法生成中文资源包")
+
+        # COD4 Steam 版的 Steam manifest 常常仍写 english，但 2009 汉化
+        # 实际依赖只留下 localized_chinese_* 这一条 localized 资源链。
+        # 保留英文/德文 localized 包会让菜单继续走英文资源，甚至覆盖中文字体。
+        for old in sorted(main_dir.glob(f"{self.IWD_CN_PATTERN}*.iwd")):
+            self._backup(old)
             old.unlink()
-            self._info(f"已删除旧文件: {old.name}")
+            self._mark_delete(old)
+            self._info(f"已清理旧中文资源包: {old.name}")
 
-        cn_iwd_source = self.patch_dir / "patches" / "main" / "localized_chinese_iw15.iwd"
-        if not cn_iwd_source.exists():
-            cn_iwd_source = self.patch_dir / "main" / "localized_chinese_iw15.iwd"
-
-        if cn_iwd_source.exists():
-            dst = main_dir / "localized_chinese_iw15.iwd"
+        for eng in english_iwds:
+            new_name = self.IWD_CN_PATTERN + eng.name[len(self.IWD_ENG_PATTERN):]
+            dst = main_dir / new_name
             if dst.exists():
                 self._backup(dst)
-            shutil.copy2(cn_iwd_source, dst)
-            self._info(f"已安装: {dst.name}")
+            else:
+                self._mark_delete(dst)
+            shutil.copy2(eng, dst)
+            self._info(f"已生成: {dst.name} <- {eng.name}")
 
-            for eng in sorted(main_dir.glob(f"{self.IWD_ENG_PATTERN}*.iwd")):
-                disabled = eng.with_suffix(eng.suffix + ".disabled")
-                if disabled.exists():
-                    disabled.unlink()  # 清理上次卸载残留的 .disabled
-                self._backup(eng)
-                eng.rename(disabled)
-                self._mark_rename(disabled, eng)
-                self._info(f"已停用: {eng.name} -> {disabled.name}")
+        cn_iwd_source = self._find_iw15_source()
+
+        localized_dst = main_dir / "localized_chinese_iw15.iwd"
+        localized_existed = localized_dst.exists()
+        if localized_existed:
+            self._backup(localized_dst)
         else:
-            for eng in sorted(main_dir.glob(f"{self.IWD_ENG_PATTERN}*.iwd")):
-                new_name = self.IWD_CN_PATTERN + eng.name[len(self.IWD_ENG_PATTERN):]
-                new_path = main_dir / new_name
-                self._backup(eng)
-                eng.rename(new_path)
-                self._mark_rename(new_path, eng)
-                self._info(f"已重命名: {eng.name} -> {new_name}")
+            self._mark_delete(localized_dst)
+            self._record_generated_file(localized_dst)
+        shutil.copy2(cn_iwd_source, localized_dst)
+        self._info(f"已安装汉化资源: {localized_dst.name}")
+
+        base_dst = main_dir / self._next_base_iwd_name(main_dir)
+        base_existed = base_dst.exists()
+        if base_existed:
+            self._backup(base_dst)
+        else:
+            self._mark_delete(base_dst)
+            self._record_generated_file(base_dst)
+        shutil.copy2(cn_iwd_source, base_dst)
+        self._info(f"已安装通用资源: {base_dst.name}")
+
+        self._disable_non_chinese_localized_iwds(main_dir)
+
+    def _restore_english_iwds_from_old_patch(self, main_dir: Path) -> list[Path]:
+        restored = []
+        old_patch_iwds = sorted(main_dir.glob(f"{self.IWD_CN_PATTERN}*.iwd"))
+        for cn_iwd in old_patch_iwds:
+            suffix = cn_iwd.name[len(self.IWD_CN_PATTERN):]
+            if not suffix[:2].isdigit():
+                continue
+            try:
+                index = int(suffix[:2])
+            except ValueError:
+                continue
+            if index > 6:
+                continue
+            target = main_dir / f"{self.IWD_ENG_PATTERN}{suffix}"
+            if target.exists():
+                continue
+            self._mark_delete(target)
+            shutil.copy2(cn_iwd, target)
+            restored.append(target)
+            self._info(f"已修复老补丁改名: {target.name} <- {cn_iwd.name}")
+        return sorted(restored)
+
+    def _next_base_iwd_name(self, main_dir: Path) -> str:
+        max_index = -1
+        for iwd in sorted(main_dir.glob("iw_*.iwd")):
+            suffix = iwd.stem.removeprefix("iw_")
+            try:
+                max_index = max(max_index, int(suffix))
+            except ValueError:
+                continue
+        if max_index < 0:
+            raise RuntimeError("main/ 中未找到 iw_*.iwd，无法生成通用汉化资源包")
+        return f"iw_{max_index + 1:02d}.iwd"
+
+    def _next_active_localized_iwd_name(self, active_iwds: list[Path]) -> str:
+        max_index = -1
+        for iwd in active_iwds:
+            suffix = iwd.stem.removeprefix(self.IWD_ENG_PATTERN)
+            try:
+                max_index = max(max_index, int(suffix))
+            except ValueError:
+                continue
+        if max_index < 0:
+            raise RuntimeError("无法判断当前 Steam 英文 localized_iwd 连续编号")
+        return f"{self.IWD_ENG_PATTERN}{max_index + 1:02d}.iwd"
+
+    def _disable_non_chinese_localized_iwds(self, main_dir: Path):
+        for iwd in sorted(main_dir.glob("localized_*.iwd")):
+            if iwd.name.startswith(self.IWD_CN_PATTERN):
+                continue
+            disabled = iwd.with_suffix(iwd.suffix + ".disabled")
+            if disabled.exists():
+                disabled.unlink()
+            self._backup(iwd)
+            iwd.rename(disabled)
+            self._mark_rename(disabled, iwd)
+            self._info(f"已停用非中文 localized: {iwd.name} -> {disabled.name}")
+
+    def _next_chinese_iwd_name(self, english_iwds: list[Path]) -> str:
+        max_index = -1
+        for iwd in english_iwds:
+            suffix = iwd.stem.removeprefix(self.IWD_ENG_PATTERN)
+            try:
+                max_index = max(max_index, int(suffix))
+            except ValueError:
+                continue
+        if max_index < 0:
+            raise RuntimeError("无法判断 localized_english_iw*.iwd 的连续编号")
+        return f"{self.IWD_CN_PATTERN}{max_index + 1:02d}.iwd"
+
+    def _find_iw15_source(self) -> Path:
+        candidates = [
+            self.patch_dir / "patches" / "main" / "localized_chinese_iw15.iwd",
+            self.patch_dir / "main" / "localized_chinese_iw15.iwd",
+            self.patch_dir / "patches" / "main" / "localized_english_iw15.iwd",
+            self.patch_dir / "main" / "localized_english_iw15.iwd",
+        ]
+        for candidate in candidates:
+            if candidate.exists():
+                return candidate
+        raise RuntimeError("未找到 localized_chinese_iw15.iwd / localized_english_iw15.iwd 汉化资源包")
+
+    def _validate_installation(self):
+        main_dir = self.game_dir / "main"
+        base_iwds = []
+        for idx in range(100):
+            iwd = main_dir / f"iw_{idx:02d}.iwd"
+            if not iwd.exists():
+                break
+            base_iwds.append(iwd)
+
+        if not base_iwds:
+            raise RuntimeError("安装校验失败，缺少 iw_00.iwd")
+
+        found_minimap_in_base = None
+        found_font_in_base = None
+        for iwd in base_iwds:
+            try:
+                with zipfile.ZipFile(iwd) as zf:
+                    if not found_minimap_in_base:
+                        try:
+                            zf.getinfo("images/minimap_tape_forcn.iwi")
+                            found_minimap_in_base = iwd.name
+                        except KeyError:
+                            pass
+                    if not found_font_in_base:
+                        try:
+                            zf.getinfo("images/gamefonts_pc_normal.iwi")
+                            found_font_in_base = iwd.name
+                        except KeyError:
+                            pass
+            except zipfile.BadZipFile as e:
+                raise RuntimeError(f"安装校验失败，IWD 损坏: {iwd.name}") from e
+            if found_minimap_in_base and found_font_in_base:
+                break
+
+        if not found_minimap_in_base:
+            loaded_names = ", ".join(p.name for p in base_iwds)
+            raise RuntimeError(
+                "安装校验失败，COD4 连续加载的通用 IWD 中缺少 "
+                f"images/minimap_tape_forcn.iwi；当前连续序列: {loaded_names}"
+            )
+
+        if not found_font_in_base:
+            loaded_names = ", ".join(p.name for p in base_iwds)
+            raise RuntimeError(
+                "安装校验失败，COD4 连续加载的通用 IWD 中缺少 "
+                f"images/gamefonts_pc_normal.iwi；当前连续序列: {loaded_names}"
+            )
+
+        loaded_iwds = []
+        for idx in range(100):
+            iwd = main_dir / f"{self.IWD_CN_PATTERN}{idx:02d}.iwd"
+            if not iwd.exists():
+                break
+            loaded_iwds.append(iwd)
+
+        if not loaded_iwds:
+            raise RuntimeError("安装校验失败，缺少 localized_chinese_iw00.iwd")
+
+        active_leftovers = [
+            p.name for p in main_dir.glob("localized_*.iwd")
+            if not p.name.startswith(self.IWD_CN_PATTERN)
+        ]
+        if active_leftovers:
+            raise RuntimeError(
+                "安装校验失败，仍存在非中文 localized IWD: "
+                + ", ".join(sorted(active_leftovers))
+            )
+
+        code_post_gfx = self.game_dir / "zone" / "english" / "code_post_gfx.ff"
+        if code_post_gfx.exists():
+            try:
+                data = self.decompress_ff(code_post_gfx.read_bytes())
+            except RuntimeError as e:
+                raise RuntimeError(f"安装校验失败，code_post_gfx.ff 无法解压: {e}") from e
+            required = {
+                b"MENU_NEWGAME": "MENU_NEWGAME",
+                "新游戏".encode("gbk"): "新游戏",
+                b"gamefonts_pc_normal": "gamefonts_pc_normal",
+            }
+            missing = [label for needle, label in required.items() if needle not in data]
+            if missing:
+                raise RuntimeError(
+                    "安装校验失败，zone/english/code_post_gfx.ff 缺少汉化资源: "
+                    + ", ".join(missing)
+                )
+
+        self._ok(
+            f"资源校验通过: {found_minimap_in_base} 中的 minimap_tape_forcn.iwi 可读取，"
+            f"{found_font_in_base} 中的 gamefonts_pc_normal.iwi 可读取，"
+            f"code_post_gfx.ff 含中文菜单资源，非中文 localized 已停用"
+        )
 
     def _step_zone_prep(self, target_ff_names: set):
         chinese_dir = self.game_dir / self.ZONE_TARGET_DIR
@@ -451,6 +663,32 @@ class COD4CNPatch:
             raise RuntimeError(
                 f"缺少必需的 .ff 源文件: {', '.join(missing)}"
             )
+
+    def _step_full_zone_files(self):
+        zone_sources = [
+            ("code_post_gfx.ff", ["zone/chinese", "zone/english"]),
+            ("localized_code_post_gfx_mp.ff", ["zone/chinese", "zone/english"]),
+        ]
+        for filename, target_dirs in zone_sources:
+            source = self.patch_dir / "patches" / "zone" / filename
+            if not source.exists():
+                source = self.patch_dir / "zone" / filename
+            if not source.exists():
+                self._warn(f"缺少完整 fastfile，跳过: {filename}")
+                continue
+
+            for target_rel in target_dirs:
+                target_dir = self.game_dir / target_rel
+                if not target_dir.exists():
+                    continue
+                target = target_dir / filename
+                if target.exists():
+                    self._backup(target)
+                else:
+                    self._mark_delete(target)
+                    self._record_generated_file(target)
+                shutil.copy2(source, target)
+                self._info(f"已安装完整 fastfile: {target_rel}/{filename}")
 
     def _step_ff_patches(self, ff_patches: dict):
         chinese_dir = self.game_dir / self.ZONE_TARGET_DIR
@@ -489,6 +727,27 @@ class COD4CNPatch:
             current += 1
             size_str = f"{len(compressed)/1024:.0f}KB -> {len(new_compressed)/1024:.0f}KB"
             self._progress(current, total, f"{ff_name:24s} {size_str}  ({len(plist)}p)")
+
+    def _step_zone_mirror_to_english(self, target_ff_names: set):
+        """Steam/CoD4x builds may keep loc_language=english at startup.
+
+        Mirror patched fastfiles into zone/english as the active loading path,
+        while keeping zone/chinese for installs that do honor localization.txt.
+        """
+        chinese_dir = self.game_dir / self.ZONE_TARGET_DIR
+        english_dir = self.game_dir / "zone" / "english"
+        if not english_dir.exists():
+            self._warn("zone/english/ 不存在，跳过 Steam 英文加载路径同步")
+            return
+
+        for ff_name in sorted(target_ff_names):
+            source = chinese_dir / ff_name
+            target = english_dir / ff_name
+            if not source.exists() or not target.exists():
+                continue
+            self._backup(target)
+            shutil.copy2(source, target)
+            self._info(f"已同步: zone/english/{ff_name}")
 
     # ═══════════════════════════════════════════════════
     #  UNINSTALL
@@ -549,6 +808,24 @@ class COD4CNPatch:
                 self._info(f"已删除: main/{cn_iwd.name}")
             except Exception as e:
                 self._warn(f"删除失败 {cn_iwd.name}: {e}")
+
+        # 删除安装时新建的普通 IWD（例如 iw_14.iwd）
+        if self.generated_manifest.exists():
+            for line in self.generated_manifest.read_text(encoding="utf-8").splitlines():
+                rel = line.strip()
+                if not rel:
+                    continue
+                generated = self.game_dir / rel
+                try:
+                    if generated.exists():
+                        generated.unlink()
+                        self._info(f"已删除生成文件: {rel}")
+                    disabled_generated = generated.with_suffix(generated.suffix + ".disabled")
+                    if disabled_generated.exists():
+                        disabled_generated.unlink()
+                        self._info(f"已删除生成文件: {disabled_generated.relative_to(self.game_dir)}")
+                except Exception as e:
+                    self._warn(f"删除生成文件失败 {rel}: {e}")
 
         # 恢复被禁用的英文 IWD
         for disabled in main_dir.glob(f"{self.IWD_ENG_PATTERN}*.iwd.disabled"):
