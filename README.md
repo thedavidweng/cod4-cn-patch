@@ -15,7 +15,7 @@
 | 翻译 | digmouse、kb1999、Panzerwillow、softboy（游侠汉化组） |
 | 测试 | Happymars、Loper、speedypanda、arj1984、杜达耶夫、wblllqbnb3、viscap、237252994、momo、unlucky（使命召唤中文站测试组）；digmouse、klarc（游侠汉化组） |
 | 鸣谢 | 中国主视角站（图标汉化包）、aintnomeinteam（遗失CSV文件） |
-| **新版安装脚本** | **David** |
+| **新版安装脚本** | **[David](https://github.com/thedavidweng)** |
 
 ## 与原版的区别
 
@@ -191,6 +191,6 @@ python3 cod4_cn_patch.py install --game-dir ~/Games/COD4
 - 技术：070、sunwayking、falser
 - 翻译：digmouse、kb1999、Panzerwillow、softboy
 - 测试：Happymars、Loper、speedypanda 等
-- 来源：[游侠网](http://www.ali213.net) / [使命召唤中文站](http://www.codchina.net)
+- 来源：[游侠网](http://www.ali213.net) / 使命召唤中文站
 
 本安装器仅提供**现代化跨平台封装**，未修改任何汉化数据内容。
