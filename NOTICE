@@ -1,0 +1,23 @@
+NOTICE
+
+This repository contains two distinct components with separate copyright:
+
+1. INSTALLER SCRIPTS
+   Files: cod4_cn_patch.py, *.bat, *.command, *.sh
+   Copyright: (c) 2025 David Weng
+   License: MIT (see LICENSE)
+
+2. TRANSLATION DATA
+   Directory: patches/
+   Copyright: (c) 2009 游侠汉化组 / Ali213.net
+   Origin: Call of Duty 4: Modern Warfare Chinese Localization Patch (2009)
+   Original authors: lijingxing, 070, sunwayking, falser, digmouse,
+                     kb1999, Panzerwillow, softboy, and others.
+   See README.md for full attribution.
+
+The translation data files are redistributed as-is from the original 2009
+release without modification. The original copyright belongs to 游侠汉化组.
+No claim of ownership is made over these files.
+
+If you are a rights holder and believe this redistribution is not authorized,
+please open an issue and the files will be removed.
