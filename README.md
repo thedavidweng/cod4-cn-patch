@@ -1,5 +1,7 @@
 # COD4:MW 中文补丁现代化跨平台安装器
 
+[![Mentioned in Awesome Game Translations](https://awesome.re/mentioned-badge.svg)](https://github.com/thedavidweng/awesome-game-translations)
+
 ![预览](preview.png)
 
 **声明：本安装器是基于2009年游侠汉化组原汉化补丁成果的现代化版本，所有汉化数据均直接复用自2009年原版发行包，未做任何修改。本安装器仅将原版的 decompressor/replace/compressor 私有 EXE 工具链替换为跨平台的 Python zlib 标准库实现。**
